@@ -1,52 +1,54 @@
-## Put comments here that give an overall description of what your
-## functions do
-##	makeCacheMatrix: This function creates a special "matrix" object that can cache its inverse.
-##        cacheSolve: This function computes the inverse of the special "matrix" returned by makeCacheMatrix above. If the inverse has already been calculated (and the matrix has not changed), then the cachesolve should retrieve the inverse from the cache.
-
-## Write a short comment describing this function
-
-makeCacheMatrix <- function(x = matrix()) {
-	
-	inverse<-NULL
-	
-	
-	set <- function(y) { 
-		x <<- y 
-		inverse <<- NULL
-	}
-	
-	get <- function() { x }
-	
-	setInverse <- function(inv) { inverse <<- inv}
-	
-	getInverse <- function() { inverse }
-	
-	
-	
-	
-	list(
-	set = set,
-	get = get,
-	setInverse = setInverse,
-	getInverse = getInverse
-	)
-	
+best <- function(state, outcome,arg_best=TRUE)
+{
+    ## Read outcome data
+    ## Check that state and outcome are valid
+    ## Return hospital name in that state with lowest 30-day death
+    
+    if(outcome!="heart attack"&&outcome!="heart failure"&&outcome!="pneumonia")
+    {
+        stop("invalid outcome")
+    }
+    
+    myFilename<-"outcome-of-care-measures.csv"
+    
+    colIdx<-switch(EXPR=outcome,
+    "heart attack"=11,
+    "heart failure"=17,
+    "pneumonia"=23)
+    
+    dfrm_Data<-myFun_LoadAndPrepareData(myFilename,colIdx)
+    
+    if(!(state %in% dfrm_Data$State))
+    {
+        stop("invalid state")
+    }
+    
+    dfrm_Data<-subset(dfrm_Data,dfrm_Data$State==state)
+    if(arg_best)
+    {
+        valMin<-min(dfrm_Data[[colIdx]],na.rm=TRUE)
+        dfrm_Data<-subset(dfrm_Data,dfrm_Data[[colIdx]]==valMin)
+    }
+    else
+    {
+        valMax<-max(dfrm_Data[[colIdx]],na.rm=TRUE)
+        dfrm_Data<-subset(dfrm_Data,dfrm_Data[[colIdx]]==valMax)
+    }
+    
+    ##Sort hospitals by names (to return omly 1 result)
+    dfrm_Data<-dfrm_Data[order(dfrm_Data[["Hospital.Name"]]),]
+    return(dfrm_Data[1,"Hospital.Name"])
+    
 }
 
-
-## Write a short comment describing this function
-
-cacheSolve <- function(x, ...) {
-        ## Return a matrix that is the inverse of 'x'
-        inverse <- x$getInverse()
-        
-        if(!is.null(x)) { 
-        	print("retrieving cached data ")
-        	return(x)
-        }
-        
-        data <- x$get()
-        x <- solve(inverse)
-        x$setInverse(inverse)
-        inverse
+##******************
+myFun_LoadAndPrepareData<-function(arg_filename,arg_NumColumnIdx)
+{
+    ##Load data
+    outcome <- read.csv(arg_filename, colClasses = "character")
+    
+    ##Transform column values to numetic
+    outcome[, arg_NumColumnIdx] <- as.numeric(outcome[, arg_NumColumnIdx])
+    
+    return(outcome)
 }
